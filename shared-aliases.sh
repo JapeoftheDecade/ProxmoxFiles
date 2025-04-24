@@ -1,4 +1,56 @@
+# function to install nodejs and npm
+npmnjs() {
+sudo apt update
+sudo apt install -y curl build-essential ca-certificates
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt install -y nodejs
+node --version
+npm --version
+}
 
+# function to install cuda
+function cudi() {
+    # Add contrib and non-free repositories
+    sudo sed -i '/^deb .* \(main\|universe\|restricted\|multiverse\)/s/$/ contrib non-free/' /etc/apt/sources.list
+    
+    # Download CUDA repository package
+    wget https://developer.download.nvidia.com/compute/cuda/12.8.1/local_installers/cuda-repo-debian12-12-8-local_12.8.1-570.124.06-1_amd64.deb
+    
+    # Install CUDA repository package
+    sudo dpkg -i cuda-repo-debian12-12-8-local_12.8.1-570.124.06-1_amd64.deb
+    
+    # Copy GPG key to correct location
+    sudo cp /var/cuda-repo-debian12-12-8-local/cuda-*-keyring.gpg /usr/share/keyrings/
+    
+    # Update package lists
+    sudo apt-get update
+    
+    # Install CUDA toolkit
+    sudo apt-get -y install cuda-toolkit-12-8
+    
+    # Add CUDA paths to environment variables
+    echo 'export PATH=/usr/local/cuda-12.8/bin${PATH:+:${PATH}}' >> ~/.bashrc
+    echo 'export LD_LIBRARY_PATH=/usr/local/cuda-12.8/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}' >> ~/.bashrc
+    
+    # Install additional CUDA packages and dependencies
+    sudo apt-get -y install cuda build-essential cmake freeglut3-dev libx11-dev libxmu-dev libxi-dev libgl1-mesa-glx libglu1-mesa libglu1-mesa-dev libglfw3-dev libgles2-mesa-dev libglx-dev libopengl-dev
+    
+    # Enable changes in current session
+    source ~/.bashrc
+    
+    echo "CUDA 12.8 installation completed successfully!"
+    echo "Remember to restart your session or log out and back in for the changes to take effect."
+}
+
+# function for quick edit lxc conf file
+lxe() {
+
+nano "/etc/pve/lxc/$1.conf"
+
+ }
+
+alias olp='ollama pull'
+alias ni='netstat -i'
 alias th='tree -h'
 
 # VM disk import function
@@ -189,7 +241,6 @@ alias mss='nano /usr/local/bin/sync-lxc-aliases.sh'
 alias msl='nano  /var/log/lxc-alias-sync.log'
 alias sb='source ~/.bashrc'
 alias lx='cd /etc/pve/lxc/'
-alias lxe='nano /etc/pve/lxc/'
 alias upin='update-initramfs -u -k all'
 # ─────────────────────────────────────────
 # ⚡ BONUS UTILS
@@ -504,15 +555,12 @@ alias py3='python3'
 alias ver='cat /etc/*-release'
 alias fresh='rm -f /etc/ssh/ssh_host_* && sudo truncate -s 0 /etc/machine-id && sudo apt clean && sudo apt autoremove -y' #  && poweroff'
 alias cmi='cat /etc/machine-id'
-alias gg='ls -la /dev/nvidia* && 
-ls -l /dev/dri*'
+alias gg='ls -la /dev/nvidia* && ls -l /dev/dri*'
 alias nas='mount -t nfs 192.168.4.2:/hdd10tb/nas/  /mnt/nas && mount -t nfs 192.168.4.2:/hdd4tb/dump/ /mnt/bs1backup'
 alias unas='umount /mnt/nas && umount /mnt/bs1backup'
 alias rcm='rsync --ignore-existing -avprzh /mnt/nas/ai/sd/models/ /nv1a/subvol-502-disk-0/root/comfy/ComfyUI/models'
 alias lnas='l  /mnt/nas && l /mnt/bs1backup'
-# alias ndev='cd /etc/pve/lxc && nano /etc/pve/lxc/devs.conf'
-alias doug='cd /opt/dockge
-docker compose pull && docker compose up -d'
+alias doug='cd /opt/dockge docker compose pull && docker compose up -d'
 alias lxb="apt-get update --fix-missing && apt update && apt full-upgrade -y && apt dist-upgrade -y && apt install -y  && apt install -y lshw cmake pciutils curl git pkg-config cmake vulkan-validationlayers libvulkan1 tree python3-pip dkms wget btop nvtop htop pciutils build-essential software-properties-common fd-find git -y && apt clean && apt autoremove -y && update-pciids && usermod -aG render,video,audio root"
 alias tki='bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/turnkey/turnkey.sh)"'
 alias tkp='cat turnkey-name.creds'
