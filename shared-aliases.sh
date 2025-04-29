@@ -1,3 +1,387 @@
+
+# docker with portainer install function
+dkpt() {
+ clear
+    echo "DOCKER and PORTAINER installation choose your distro: Debian or Ubuntu? (d/u): "
+    read -r distro
+
+    # Uninstall old Docker versions
+    echo "Removing old Docker versions..."
+    for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
+        sudo apt-get remove -y "$pkg"
+    done
+
+    # Update and upgrade system
+    echo "Updating system packages..."
+    sudo apt update && sudo apt full-upgrade -y && sudo apt dist-upgrade -y
+
+    # Common setup
+    echo "Installing prerequisites..."
+    sudo apt-get install -y ca-certificates curl
+    sudo install -m 0755 -d /etc/apt/keyrings
+
+    if [[ $distro == "d" ]]; then
+        echo "Setting up for Debian..."
+
+        # Add Docker's GPG key
+        curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+        chmod a+r /etc/apt/keyrings/docker.asc
+
+        # Add Docker repo
+        echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    elif [[ $distro == "u" ]]; then
+        echo "Setting up for Ubuntu..."
+
+        # Add Docker's GPG key
+        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+        # Add Docker repo
+        echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+        $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    else
+        echo "Invalid option. Please enter 'd' for Debian or 'u' for Ubuntu."
+        return 1
+    fi
+
+    # Install Docker
+    echo "Updating package index and installing Docker..."
+    sudo apt-get update -y
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+    echo "Installing Portainer..."
+    docker volume create portainer_data
+    docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest
+    
+    # Get the local IP address using hostname command
+    local ip=$(hostname -I | awk '{print $1}')
+    
+    # Remove the /24 CIDR notation if it exists
+    ip=${ip%/*}
+    
+    # Append the port number
+    local ip_with_port="https://${ip}:9443"
+    
+    # Display the IP with port
+    clear
+    echo -e "\e[1;32mPORTAINER address\e[0m" 
+    echo -e "\e[1;37;41m$ip_with_port\e[0m" 
+    echo -e "\e[1;32mDocker accessed via CLI\e[0m"
+    echo -e "\e[1;32mDOCKER and PORTAINER installation completed!\e[0m"
+    echo -e "\e[1;32m*** PORTAINER accessed with an HTTPS address ***\e[0m"
+echo
+}
+
+# docker with dockge install function
+dkdg() {
+ clear
+    echo "DOCKER and DOCKGE installation choose your distro: Debian or Ubuntu? (d/u): "
+    read -r distro
+
+    # Uninstall old Docker versions
+    echo "Removing old Docker versions..."
+    for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
+        sudo apt-get remove -y "$pkg"
+    done
+
+    # Update and upgrade system
+    echo "Updating system packages..."
+    sudo apt update && sudo apt full-upgrade -y && sudo apt dist-upgrade -y
+
+    # Common setup
+    echo "Installing prerequisites..."
+    sudo apt-get install -y ca-certificates curl
+    sudo install -m 0755 -d /etc/apt/keyrings
+
+    if [[ $distro == "d" ]]; then
+        echo "Setting up for Debian..."
+
+        # Add Docker's GPG key
+        curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+        chmod a+r /etc/apt/keyrings/docker.asc
+
+        # Add Docker repo
+        echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    elif [[ $distro == "u" ]]; then
+        echo "Setting up for Ubuntu..."
+
+        # Add Docker's GPG key
+        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+        # Add Docker repo
+        echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+        $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    else
+        echo "Invalid option. Please enter 'd' for Debian or 'u' for Ubuntu."
+        return 1
+    fi
+
+    # Install Docker
+    echo "Updating package index and installing Docker..."
+    sudo apt-get update -y
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+
+    echo "Installing Dockge..."
+    mkdir -p /opt/stacks /opt/dockge
+    cd /opt/dockge
+    
+    curl https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml --output compose.yaml
+    
+    # Start the server using docker compose (Docker Compose V2+)
+    docker compose up -d
+    
+    # If you are using Docker Compose V1 or Podman, uncomment and run:
+    # docker-compose up -d
+
+    # Get the local IP address using hostname command
+    local ip=$(hostname -I | awk '{print $1}')
+    
+    # Remove the /24 CIDR notation if it exists
+    ip=${ip%/*}
+    
+    # Append the port number
+    local ip_with_port="http://${ip}:5001"
+    
+    # Display the IP with port
+    clear
+    echo -e "\e[1;32mDockge address\e[0m" 
+    echo -e "\e[1;37;41m$ip_with_port\e[0m" 
+    echo -e "\e[1;32mDocker accessed via CLI\e[0m"
+    echo -e "\e[1;32mDOCKER and DOCKGE installation completed!\e[0m"
+echo
+}
+
+# docker install function
+dko() {
+ clear
+    echo "DOCKER only installation choose your distro: Debian or Ubuntu? (d/u): "
+    read -r distro
+
+    # Uninstall old Docker versions
+    echo "Removing old Docker versions..."
+    for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
+        sudo apt-get remove -y "$pkg"
+    done
+
+    # Update and upgrade system
+    echo "Updating system packages..."
+    sudo apt update && sudo apt full-upgrade -y && sudo apt dist-upgrade -y
+
+    # Common setup
+    echo "Installing prerequisites..."
+    sudo apt-get install -y ca-certificates curl
+    sudo install -m 0755 -d /etc/apt/keyrings
+
+    if [[ $distro == "d" ]]; then
+        echo "Setting up for Debian..."
+
+        # Add Docker's GPG key
+        curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+        chmod a+r /etc/apt/keyrings/docker.asc
+
+        # Add Docker repo
+        echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    elif [[ $distro == "u" ]]; then
+        echo "Setting up for Ubuntu..."
+
+        # Add Docker's GPG key
+        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+        # Add Docker repo
+        echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+        $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    else
+        echo "Invalid option. Please enter 'd' for Debian or 'u' for Ubuntu."
+        return 1
+    fi
+
+    # Install Docker
+    echo "Updating package index and installing Docker..."
+    sudo apt-get update -y
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+    # Get the local IP address using hostname command
+    local ip=$(hostname -I | awk '{print $1}')
+    
+    # Remove the /24 CIDR notation if it exists
+    ip=${ip%/*}
+ 
+    # Append the port number if needed
+    local ip_with_port="http://${ip}"
+   
+    # Display the IP with port
+    clear
+    echo -e "\e[1;37;41m$ip_with_port\e[0m" 
+    echo -e "\e[1;32mDocker accessed via CLI\e[0m"
+    echo -e "\e[1;32mDOCKER installation completed!\e[0m"
+echo
+}
+
+alias lxl="apt-get update --fix-missing && apt update && apt full-upgrade -y && apt dist-upgrade -y && apt install -y pciutils lshw curl git tree build-essential software-properties-common fd-find && apt install sudo && apt install -y cmake pkg-config python3-pip dkms btop nvtop htop gcc make libgl1 libegl1 libglvnd-dev libsasl2-modules iftop dnstop vnstat net-tools qemu-guest-agent cloud-init nfs-kernel-server mailutils && apt clean && apt autoremove -y && update-pciids -y"
+alias lxm="apt-get update --fix-missing && apt update && apt full-upgrade -y && apt dist-upgrade -y && apt install -y pciutils lshw curl git tree build-essential software-properties-common fd-find && apt install sudo && apt install -y cmake pkg-config python3-pip dkms btop nvtop htop gcc make && apt clean && apt autoremove -y && update-pciids -y"
+alias lxs="apt-get update --fix-missing && apt update && apt full-upgrade -y && apt dist-upgrade -y && apt install -y pciutils lshw curl git tree build-essential software-properties-common fd-find && apt install sudo && apt clean && apt autoremove -y && update-pciids -y"
+alias um='usermod -aG render,video,audio root'
+alias arc='apt clean && apt autoremove -y'
+alias aps='apt search'
+alias fix='apt-get update --fix-missing && apt update && apt full-upgrade -y && apt dist-upgrade -y'
+alias cuc='nvidia-smi && nvcc -V'
+# Function to scan live LXCs and update notes
+ipn() {
+  # Colors
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m'
+  NC='\033[0m' # No Color
+
+  # Function to generate notes for one container
+  generate_note_for_ct() {
+    CTID="$1"
+    CONF_FILE="/etc/pve/lxc/${CTID}.conf"
+    TMP_CONF="/tmp/${CTID}_conf.tmp"
+
+    # Skip if no config
+    if [ ! -f "$CONF_FILE" ]; then
+        echo -e "${YELLOW}⚠️ Config file not found for ${CTID}.${NC}"
+        return
+    fi
+
+    # Only continue if container is running
+    if ! pct status "$CTID" | grep -q "running"; then
+        echo -e "${YELLOW}⚠️ Container ${CTID} not running, skipping notes.${NC}"
+        return
+    fi
+
+    # Extract hostname and IP
+    HOSTNAME=$(pct config "$CTID" | awk -F': ' '/^hostname:/ {print $2}')
+    IPADDR=$(pct exec "$CTID" -- hostname -I | awk '{print $1}')
+    PORTS=$(pct exec "$CTID" -- ss -tuln | awk 'NR>1 {split($5, a, ":"); print a[2]}' | sort -n | uniq)
+
+    if [ -z "$IPADDR" ]; then
+        echo -e "${YELLOW}⚠️ Could not get IP address for ${CTID}.${NC}"
+        return
+    fi
+
+    # Build notes
+    {
+        echo "# $HOSTNAME"
+        echo "#"
+        echo "# IP with Open Ports"
+        echo "#"
+        echo "# http://$IPADDR"
+        echo "#"
+        for PORT in $PORTS; do
+            echo "# http://$IPADDR:$PORT"
+        echo "#"
+        done
+        echo "# WARNING NOTE GETS OVERWRITTEN"
+        echo "#"
+
+    } > "$TMP_CONF"
+
+    # Add original config (without existing comments)
+    grep -v '^#' "$CONF_FILE" >> "$TMP_CONF"
+
+    # Replace the config
+    mv -f "$TMP_CONF" "$CONF_FILE" 2>/dev/null
+    echo -e "${GREEN}✅ Updated notes for ${CTID}.${NC}"
+  }
+
+  # --- MAIN EXECUTION ---
+  echo -e "${YELLOW}🔍 Scanning for running containers...${NC}"
+
+  # Get running containers only
+  running_cts=$(pct list | awk '$2 == "running" {print $1}')
+
+  if [ -z "$running_cts" ]; then
+      echo -e "${YELLOW}⚠️  No running containers found.${NC}"
+  else
+      for CTID in $running_cts; do
+          generate_note_for_ct "$CTID"
+      done
+  fi
+
+  echo -e "\n${GREEN}🎉 All done! Running containers updated with notes.${NC}"
+}
+
+
+# zz then <command> brings up the version
+zz() {
+    if [ -z "$1" ]; then
+        echo "Usage: zz <command>"
+        return 1
+    fi
+
+    cmd=$1
+
+    # Check for --version first
+    if $cmd --version &>/dev/null; then
+        $cmd --version
+        return 0
+    fi
+
+    # Check for -v next
+    if $cmd -v &>/dev/null; then
+        $cmd -v
+        return 0
+    fi
+
+    echo "No version information found for '$cmd'"
+}
+
+# aa then <command> brings up help or man page
+aa() {
+    if [ -z "$1" ]; then
+        echo "Usage: aa <command>"
+        return 1
+    fi
+
+    cmd=$1
+
+    # Check for --help first
+    if $cmd --help &>/dev/null; then
+        $cmd --help
+        return 0
+    fi
+
+    # Check for -h next
+    if $cmd -h &>/dev/null; then
+        $cmd -h
+        return 0
+    fi
+
+    # Fall back to man page
+    if command -v man &> /dev/null && command -v "$cmd" &> /dev/null; then
+        man "$cmd"
+        return 0
+    fi
+
+    echo "No help found for '$cmd'"
+}
+
 # function to install nodejs and npm
 npmnjs() {
 sudo apt update
@@ -9,7 +393,7 @@ npm --version
 }
 
 # function to install cuda
-function cudi() {
+cudi() {
     # Add contrib and non-free repositories
     sudo sed -i '/^deb .* \(main\|universe\|restricted\|multiverse\)/s/$/ contrib non-free/' /etc/apt/sources.list
     
@@ -50,8 +434,15 @@ nano "/etc/pve/lxc/$1.conf"
  }
 
 alias olp='ollama pull'
+alias olr='ollama run'
+alias ols='ollama serve'
+alias ol='ollama'
+alias oll='ollama list'
+alias ollp='ollama ps'
+alias olst='ollama stop'
 alias ni='netstat -i'
-alias th='tree -h'
+alias th='tree -a -h -f --metafirst --du -Q -r --sort size'
+alias thd='tree -d -h -f --metafirst --du -Q -r --sort size'
 
 # VM disk import function
 vmdi() {
@@ -140,9 +531,6 @@ alias lsd='ls $LS_OPTIONS -lAhF --group-directories-first'
 alias rm='rm -i'
 alias cp='cp -i'
 alias mv='mv -i'
-alias chmod='chmod --preserve-root'
-alias chown='chown --preserve-root'
-alias chgrp='chgrp --preserve-root'
 alias cx='chmod a+x'
 
 # ─────────────────────────────────────────
@@ -166,8 +554,14 @@ alias san='sudo /usr/local/bin/sync-lxc-aliases.sh'
 # 🐳 DOCKER & DEV OPS
 # ─────────────────────────────────────────
 alias dr='docker run'
+alias dk='docker'
+alias dke='docker exec -it' 
+alias dp='docker ps'
+alias di='docker images'
 alias dc='docker compose'
 alias gc='git clone'
+alias gpl='git pull'
+alias gph='git push'
 alias gl='git log --oneline --graph --decorate --all'
 alias gs='git status -sb'
 alias rtd="sudo nvidia-ctk runtime configure --runtime=docker
@@ -194,13 +588,11 @@ alias vnsbs2='vnstat -i enp6s0'
 alias ifbs2='iftop -pP -i enp6s0'
 alias tcpbs2='tcpdump -p --buffer-size=4096 -i enp6s0'
 alias ethbs2='ethtool enp6s0'
-
 alias dnsbs1='dnstop -l 5 eno1'
 alias vnsbs1='vnstat -i eno1'
 alias ifbs1='iftop -pP -i eno1'
 alias tcpbs1='tcpdump -p --buffer-size=4096 -i eno1'
 alias ethbs1='ethtool eno1'
-
 alias dnsct='dnstop -l 5 eth0'
 alias vnsct='vnstat -i eth0'
 alias ifct='iftop -pP -i eth0'
@@ -224,21 +616,17 @@ alias ~='cd ~'
 # 🧹 UTILS & SHORTCUTS
 # ─────────────────────────────────────────
 alias c='clear'
-alias cl='clear; l'
-alias cla='clear; la'
 alias x='exit'
 alias r='reboot'
 alias po='poweroff'
 alias fm='sync && echo 3 | sudo tee /proc/sys/vm/drop_caches'
 alias a='echo "------------Your aliases------------"; alias'
-alias h='echo "Use --help with a command, not as a command!"'
 alias fd='fdfind'  # Optional: if installed
 alias nv='nvidia-smi'
 alias nvd='nvidia-smi dmon'
 alias nvt='nvtop'
 alias msa='nano /etc/shared-aliases.sh'
 alias mss='nano /usr/local/bin/sync-lxc-aliases.sh'
-alias msl='nano  /var/log/lxc-alias-sync.log'
 alias sb='source ~/.bashrc'
 alias lx='cd /etc/pve/lxc/'
 alias upin='update-initramfs -u -k all'
@@ -254,7 +642,6 @@ chmod +x NVIDIA-Linux-x86_64-570.133.07.run
 alias nvc="wget https://us.download.nvidia.com/XFree86/Linux-x86_64/570.133.07/NVIDIA-Linux-x86_64-570.133.07.run
 chmod +x NVIDIA-Linux-x86_64-570.133.07.run
 ./NVIDIA-Linux-x86_64-570.133.07.run --no-kernel-modules"
-alias lxi="apt-get update --fix-missing -y apt update && apt full-upgrade -y && apt dist-upgrade -y && apt install -y  && apt install -y curl python3-pip tree dkms wget btop nvtop htop  pciutils build-essential software-properties-common make libgl1 libegl1 libglvnd-dev libsasl2-modules  iftop dnstop vnstat net-tools pkg-config fd-find qemu-guest-agent gcc cloud-init git cmake nfs-kernel-server mailutils vulkan-validationlayers libvulkan1 -y && apt clean && apt autoremove -y && update-pciids && usermod -aG render,video,audio root"
 alias nvcont="curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
   && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
@@ -283,93 +670,6 @@ ext() {
   else
     echo "'$1' is not a valid file"
   fi
-}
-
-# docker install function
-dki() {
-    echo "Are you on Debian or Ubuntu? (d/u): "
-    read -r distro
-
-    # Uninstall old Docker versions
-    echo "Removing old Docker versions..."
-    for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
-        sudo apt-get remove -y "$pkg"
-    done
-
-    # Update and upgrade system
-    echo "Updating system packages..."
-    sudo apt update && sudo apt full-upgrade -y && sudo apt dist-upgrade -y
-
-    # Common setup
-    echo "Installing prerequisites..."
-    sudo apt-get install -y ca-certificates curl
-    sudo install -m 0755 -d /etc/apt/keyrings
-
-    if [[ $distro == "d" ]]; then
-        echo "Setting up for Debian..."
-
-        # Add Docker's GPG key
-        curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-        chmod a+r /etc/apt/keyrings/docker.asc
-
-        # Add Docker repo
-        echo \
-        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
-        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-    elif [[ $distro == "u" ]]; then
-        echo "Setting up for Ubuntu..."
-
-        # Add Docker's GPG key
-        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-        sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-        # Add Docker repo
-        echo \
-        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-        $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
-        sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-    else
-        echo "Invalid option. Please enter 'd' for Debian or 'u' for Ubuntu."
-        return 1
-    fi
-
-    # Install Docker
-    echo "Updating package index and installing Docker..."
-    sudo apt-get update -y
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-
-    echo "Installing Dockge..."
-    mkdir -p /opt/stacks /opt/dockge
-    cd /opt/dockge
-    
-    curl https://raw.githubusercontent.com/louislam/dockge/master/compose.yaml --output compose.yaml
-    
-    # Start the server using docker compose (Docker Compose V2+)
-    docker compose up -d
-    
-    # If you are using Docker Compose V1 or Podman, uncomment and run:
-    # docker-compose up -d
-
-    # Get the local IP address using hostname command
-    local ip=$(hostname -I | awk '{print $1}')
-    
-    # Remove the /24 CIDR notation if it exists
-    ip=${ip%/*}
-    
-    # Append the port number
-    local ip_with_port="http://${ip}:5001"
-    
-    # Display the IP with port
-    clear
-    echo -e "\e[1;32mDockge address\e[0m" 
-    echo -e "\e[1;37;41m$ip_with_port\e[0m" 
-    echo -e "\e[1;32mDocker accessed via CLI\e[0m"
-    echo -e "\e[1;32mDocker and Dockge installation completed!\e[0m"
-echo
 }
 
 # List ANSI colours
@@ -458,7 +758,7 @@ ndevs() {
 }
 
 # Nopassword Logon
-function ncp() {
+ncp() {
     echo "Creating directory..."
     mkdir -p /etc/systemd/system/container-getty@1.service.d
     
@@ -541,17 +841,8 @@ nrk() {
     sudo apt update
 }
 
-
-
-alias pi312='pip3.12'
-alias py312='python3.12'
-alias pi3='pip3'
-alias py3='python3'
 alias n='nano'
-alias pi='pip3'
 alias py='python3'
-alias pi3='pip3'
-alias py3='python3'
 alias ver='cat /etc/*-release'
 alias fresh='rm -f /etc/ssh/ssh_host_* && sudo truncate -s 0 /etc/machine-id && sudo apt clean && sudo apt autoremove -y' #  && poweroff'
 alias cmi='cat /etc/machine-id'
@@ -560,8 +851,6 @@ alias nas='mount -t nfs 192.168.4.2:/hdd10tb/nas/  /mnt/nas && mount -t nfs 192.
 alias unas='umount /mnt/nas && umount /mnt/bs1backup'
 alias rcm='rsync --ignore-existing -avprzh /mnt/nas/ai/sd/models/ /nv1a/subvol-502-disk-0/root/comfy/ComfyUI/models'
 alias lnas='l  /mnt/nas && l /mnt/bs1backup'
-alias doug='cd /opt/dockge docker compose pull && docker compose up -d'
-alias lxb="apt-get update --fix-missing && apt update && apt full-upgrade -y && apt dist-upgrade -y && apt install -y  && apt install -y lshw cmake pciutils curl git pkg-config cmake vulkan-validationlayers libvulkan1 tree python3-pip dkms wget btop nvtop htop pciutils build-essential software-properties-common fd-find git -y && apt clean && apt autoremove -y && update-pciids && usermod -aG render,video,audio root"
 alias tki='bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/turnkey/turnkey.sh)"'
 alias tkp='cat turnkey-name.creds'
 alias op='lsof -i TCP| fgrep LISTEN'
